@@ -6,14 +6,12 @@ import { Card } from "@/components/ui/card";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Pause, Play, RefreshCw } from "lucide-react";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
+import { Download, Pause, Play, RefreshCw, Terminal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAssistantContext } from "@/context/assistant-context";
 import { apiUrl } from "@/lib/api";
 
-/* -------------------------
-   Types
-------------------------- */
 type LogLevel = "info" | "success" | "warn" | "error";
 
 type Log = {
@@ -23,9 +21,6 @@ type Log = {
   createdAt: string;
 };
 
-/* -------------------------
-   Helpers
-------------------------- */
 function getLevelColor(level: LogLevel) {
   switch (level) {
     case "success":
@@ -62,20 +57,13 @@ function getLogBadge(log: Log) {
   return log.level.toUpperCase();
 }
 
-/* -------------------------
-   Page
-------------------------- */
 export default function LogsPage() {
   const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
   const [autoScroll, setAutoScroll] = useState(true);
-  const { addToast } = useToast();
   const bottomRef = useRef<HTMLDivElement>(null);
   const { setContext, clearContext } = useAssistantContext();
 
-  /* -------------------------
-     Fetch logs
-  ------------------------- */
   async function fetchLogs(showLoader = false) {
     try {
       if (showLoader) setLoading(true);
@@ -103,15 +91,12 @@ export default function LogsPage() {
     }
   }
 
-  /* -------------------------
-     Initial load + slow poll
-  ------------------------- */
   useEffect(() => {
     fetchLogs(true);
 
     const interval = setInterval(() => {
       fetchLogs(false);
-    }, 10000); // ✅ 10s, not aggressive
+    }, 10000);
 
     return () => clearInterval(interval);
   }, []);
@@ -124,7 +109,6 @@ export default function LogsPage() {
     setContext({
       page: "logs",
       logScope: "system",
-
       status: `${recentErrors.length} recent error(s)`,
 
       recentActivity: recentErrors.map((l) => ({
@@ -133,7 +117,6 @@ export default function LogsPage() {
         status: "error",
       })),
 
-      // 🔥 NEW: real debugging signal
       logsSummary: recentErrors.map((l) => ({
         level: l.level,
         message: l.message,
@@ -144,9 +127,6 @@ export default function LogsPage() {
     return () => clearContext();
   }, [loading, logs.length]);
 
-  /* -------------------------
-     Auto-scroll
-  ------------------------- */
   useEffect(() => {
     if (autoScroll) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -191,8 +171,8 @@ export default function LogsPage() {
               </div>
             </div>
 
-            <Card className="overflow-hidden bg-black p-0">
-              <div className="flex items-center justify-between border-b border-border bg-muted/20 px-4 py-2">
+            <Card className="overflow-hidden bg-black p-0 border-zinc-800">
+              <div className="flex items-center justify-between border-b border-zinc-800 bg-zinc-900/40 px-4 py-2">
                 <div className="flex items-center gap-2">
                   <div className="size-3 rounded-full bg-destructive" />
                   <div className="size-3 rounded-full bg-warning" />
@@ -204,36 +184,48 @@ export default function LogsPage() {
               </div>
 
               <div
-                className="overflow-y-auto bg-black p-6"
+                className="overflow-y-auto bg-black p-6 flex flex-col"
                 style={{ height: "calc(100vh - 300px)" }}
               >
-                <div className="space-y-1 font-mono text-sm">
+                <div className="space-y-1 font-mono text-sm flex-1 flex flex-col justify-center">
                   {loading && (
-                    <p className="text-muted-foreground">Loading logs…</p>
+                    <p className="text-zinc-500 text-center">Loading logs…</p>
                   )}
 
                   {!loading && logs.length === 0 && (
-                    <p className="text-muted-foreground">
-                      No logs yet. Run a workflow or wait for the worker.
-                    </p>
+                    <Empty className="border-none bg-transparent max-w-md mx-auto py-12">
+                      <EmptyHeader>
+                        <EmptyMedia className="bg-zinc-900 text-zinc-400">
+                          <Terminal className="size-5" />
+                        </EmptyMedia>
+                        <EmptyTitle className="text-zinc-200">Terminal buffer clear</EmptyTitle>
+                        <EmptyDescription className="text-zinc-500">
+                          No active job cycles detected. Production console streams will populate execution events here.
+                        </EmptyDescription>
+                      </EmptyHeader>
+                    </Empty>
                   )}
 
-                  {logs.map((log) => (
-                    <div key={log._id} className={getLogColor(log)}>
-                      <span className="text-muted-foreground">
-                        [{new Date(log.createdAt).toLocaleTimeString()}]
-                      </span>
+                  {logs.length > 0 && (
+                    <div className="w-full h-full align-top space-y-1">
+                      {logs.map((log) => (
+                        <div key={log._id} className={getLogColor(log)}>
+                          <span className="text-zinc-600">
+                            [{new Date(log.createdAt).toLocaleTimeString()}]
+                          </span>
 
-                      <Badge
-                        variant="outline"
-                        className={`mx-2 border-current ${getLogColor(log)}`}
-                      >
-                        {getLogBadge(log)}
-                      </Badge>
+                          <Badge
+                            variant="outline"
+                            className={`mx-2 border-current text-[10px] h-4 px-1.5 ${getLogColor(log)}`}
+                          >
+                            {getLogBadge(log)}
+                          </Badge>
 
-                      {log.message}
+                          {log.message}
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
 
                   <div ref={bottomRef} />
                 </div>

@@ -12,6 +12,14 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyContent,
+} from "@/components/ui/empty";
 
 import {
   Sheet,
@@ -20,13 +28,9 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-
 import { Progress } from "@/components/ui/progress";
-
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-
 import {
   Brain,
   Search,
@@ -36,6 +40,7 @@ import {
   User,
   Info,
   Database,
+  SearchX,
 } from "lucide-react";
 
 type Memory = {
@@ -63,10 +68,7 @@ export default function MemoryPage() {
 
   async function fetchMemories() {
     setLoading(true);
-
-    const url =
-      apiUrl("/memory?search=") + encodeURIComponent(search);
-
+    const url = apiUrl("/memory?search=") + encodeURIComponent(search);
     const res = await fetch(url, {
       headers: {
         Authorization: "Bearer " + localStorage.getItem("token"),
@@ -74,17 +76,12 @@ export default function MemoryPage() {
     });
 
     const data = await res.json();
-
     if (data.ok) setMemories(data.memories);
-
     setLoading(false);
   }
 
   useEffect(() => {
-    async function loadMemories() {
-      await fetchMemories();
-    }
-    loadMemories();
+    fetchMemories();
   }, [search]);
 
   useEffect(() => {
@@ -123,7 +120,6 @@ export default function MemoryPage() {
         >
           <div className="p-8 max-w-6xl mx-auto">
             {/* Header */}
-
             <div className="mb-8 flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -140,12 +136,10 @@ export default function MemoryPage() {
             </div>
 
             {/* Search */}
-
             <Card className="mb-6">
               <CardContent className="p-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
-
                   <Input
                     placeholder="Search memory content..."
                     className="pl-9"
@@ -157,7 +151,6 @@ export default function MemoryPage() {
             </Card>
 
             {/* Memory Feed */}
-
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -180,14 +173,37 @@ export default function MemoryPage() {
                     )}
 
                     {!loading && memories.length === 0 && (
-                      <div className="text-center py-12">
-                        <Brain className="size-10 mx-auto text-muted-foreground mb-3" />
-
-                        <p className="font-medium">No memories found</p>
-
-                        <p className="text-sm text-muted-foreground">
-                          Agent memories will appear here after workflows run
-                        </p>
+                      <div className="py-6">
+                        {search ? (
+                          <Empty className="border-none bg-transparent">
+                            <EmptyHeader>
+                              <EmptyMedia variant="icon">
+                                <SearchX />
+                              </EmptyMedia>
+                              <EmptyTitle>No memories found</EmptyTitle>
+                              <EmptyDescription>
+                                Your filter parameter for "{search}" returned no historical semantic matches.
+                              </EmptyDescription>
+                            </EmptyHeader>
+                            <EmptyContent>
+                              <Button size="sm" variant="outline" onClick={() => setSearch("")}>
+                                Reset Filter
+                              </Button>
+                            </EmptyContent>
+                          </Empty>
+                        ) : (
+                          <Empty className="border-none bg-transparent">
+                            <EmptyHeader>
+                              <EmptyMedia variant="icon">
+                                <Brain />
+                              </EmptyMedia>
+                              <EmptyTitle>No memories captured</EmptyTitle>
+                              <EmptyDescription>
+                                Agent memory instances will display here continuously once your multi-agent pipelines begin running.
+                              </EmptyDescription>
+                            </EmptyHeader>
+                          </Empty>
+                        )}
                       </div>
                     )}
 
@@ -206,72 +222,54 @@ export default function MemoryPage() {
                           <div className="flex justify-between items-start gap-6">
                             <div className="flex-1 space-y-4">
                               {/* User */}
-
                               {parsed.user && (
                                 <div className="flex gap-3">
                                   <User className="size-4 mt-1 text-muted-foreground" />
-
                                   <div>
-                                    <p className="text-xs text-muted-foreground mb-1">
-                                      User
-                                    </p>
-
-                                    <p className="text-sm whitespace-pre-wrap">
-                                      {parsed.user}
-                                    </p>
+                                    <p className="text-xs text-muted-foreground mb-1">User</p>
+                                    <p className="text-sm whitespace-pre-wrap">{parsed.user}</p>
                                   </div>
                                 </div>
                               )}
 
                               {/* Assistant */}
-
                               {parsed.assistant && (
                                 <div className="flex gap-3">
                                   <Bot className="size-4 mt-1 text-muted-foreground" />
-
                                   <div>
-                                    <p className="text-xs text-muted-foreground mb-1">
-                                      Assistant
-                                    </p>
-
-                                    <p className="text-sm whitespace-pre-wrap">
-                                      {parsed.assistant}
-                                    </p>
+                                    <p className="text-xs text-muted-foreground mb-1">Assistant</p>
+                                    <p className="text-sm whitespace-pre-wrap">{parsed.assistant}</p>
                                   </div>
                                 </div>
                               )}
 
                               {/* Raw fallback */}
-
                               {parsed.raw && (
-                                <p className="text-sm whitespace-pre-wrap">
-                                  {parsed.raw}
-                                </p>
+                                <p className="text-sm whitespace-pre-wrap">{parsed.raw}</p>
                               )}
 
                               {/* Metadata */}
-
                               <div className="flex items-center gap-3 text-xs">
                                 <Badge variant="secondary" className="gap-1">
                                   <Bot className="size-3" />
-
                                   {m.agentId?.name || "agent"}
                                 </Badge>
 
                                 <Badge variant="outline" className="gap-1">
                                   <Clock className="size-3" />
-
                                   {new Date(m.createdAt).toLocaleString()}
                                 </Badge>
                               </div>
                             </div>
 
                             {/* Actions */}
-
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => deleteMemory(m._id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteMemory(m._id);
+                              }}
                               className="text-destructive hover:bg-destructive/10"
                             >
                               <Trash2 className="size-4" />
@@ -289,7 +287,6 @@ export default function MemoryPage() {
 
         <Sheet open={inspectorOpen} onOpenChange={setInspectorOpen}>
           <SheetContent className="w-[min(720px,90vw)] p-0 h-screen flex flex-col">
-            {/* Accessibility Title (hidden but required by Radix) */}
             <SheetHeader className="sr-only">
               <SheetTitle>Memory Inspector</SheetTitle>
               <SheetDescription>
@@ -299,7 +296,6 @@ export default function MemoryPage() {
             {selectedMemory && (
               <>
                 {/* HEADER */}
-
                 <div className="border-b px-6 py-4 flex items-center justify-between shrink-0">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-md bg-primary/10">
@@ -320,13 +316,11 @@ export default function MemoryPage() {
                 </div>
 
                 {/* SCROLLABLE CONTENT */}
-
                 <div
                   ref={inspectorScrollRef}
                   className="flex-1 overflow-y-auto px-6 py-6 space-y-6"
                 >
                   {/* MEMORY PREVIEW */}
-
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm flex items-center gap-2">
@@ -343,7 +337,6 @@ export default function MemoryPage() {
                           return (
                             <>
                               {/* USER */}
-
                               <div className="flex gap-3 items-start">
                                 <Avatar className="size-7 shrink-0">
                                   <AvatarFallback>U</AvatarFallback>
@@ -355,7 +348,6 @@ export default function MemoryPage() {
                               </div>
 
                               {/* ASSISTANT */}
-
                               <div className="flex gap-3 items-start">
                                 <Avatar className="size-7 shrink-0">
                                   <AvatarFallback>A</AvatarFallback>
@@ -379,7 +371,6 @@ export default function MemoryPage() {
                   </Card>
 
                   {/* METADATA */}
-
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm flex items-center gap-2">
@@ -405,9 +396,7 @@ export default function MemoryPage() {
                         </div>
 
                         <div>
-                          <p className="text-xs text-muted-foreground">
-                            Workflow
-                          </p>
+                          <p className="text-xs text-muted-foreground">Workflow</p>
                           <p className="font-mono text-xs break-all">
                             {selectedMemory.metadata?.workflowId || "N/A"}
                           </p>
@@ -421,13 +410,9 @@ export default function MemoryPage() {
                         </div>
 
                         <div className="col-span-2">
-                          <p className="text-xs text-muted-foreground">
-                            Created
-                          </p>
+                          <p className="text-xs text-muted-foreground">Created</p>
                           <p>
-                            {new Date(
-                              selectedMemory.createdAt,
-                            ).toLocaleString()}
+                            {new Date(selectedMemory.createdAt).toLocaleString()}
                           </p>
                         </div>
                       </div>
@@ -435,7 +420,6 @@ export default function MemoryPage() {
                   </Card>
 
                   {/* EMBEDDING INFO */}
-
                   <Card>
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm flex items-center gap-2">
@@ -447,9 +431,7 @@ export default function MemoryPage() {
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-3 gap-4 text-sm">
                         <div>
-                          <p className="text-xs text-muted-foreground">
-                            Provider
-                          </p>
+                          <p className="text-xs text-muted-foreground">Provider</p>
                           <Badge variant="outline">
                             {selectedMemory.embeddingProvider || "unknown"}
                           </Badge>
@@ -463,9 +445,7 @@ export default function MemoryPage() {
                         </div>
 
                         <div>
-                          <p className="text-xs text-muted-foreground">
-                            Vector Size
-                          </p>
+                          <p className="text-xs text-muted-foreground">Vector Size</p>
                           <p className="font-semibold">
                             {selectedMemory.embedding?.length || 0}
                           </p>
@@ -474,8 +454,7 @@ export default function MemoryPage() {
 
                       <Progress
                         value={Math.min(
-                          ((selectedMemory.embedding?.length || 0) / 4096) *
-                            100,
+                          ((selectedMemory.embedding?.length || 0) / 4096) * 100,
                           100,
                         )}
                       />
@@ -483,7 +462,6 @@ export default function MemoryPage() {
                   </Card>
 
                   {/* RAW DATA */}
-
                   <Tabs defaultValue="content">
                     <TabsList className="grid grid-cols-2 w-full">
                       <TabsTrigger value="content">Memory Content</TabsTrigger>
@@ -513,27 +491,12 @@ export default function MemoryPage() {
                 </div>
 
                 {/* FOOTER */}
-
                 <div className="border-t p-4 shrink-0">
                   <Button
                     variant="destructive"
                     className="w-full"
                     onClick={async () => {
-                      await fetch(
-                        apiUrl(`/memory/${selectedMemory._id}`),
-                        {
-                          method: "DELETE",
-                          headers: {
-                            Authorization:
-                              "Bearer " + localStorage.getItem("token"),
-                          },
-                        },
-                      );
-
-                      setMemories((prev) =>
-                        prev.filter((m) => m._id !== selectedMemory._id),
-                      );
-
+                      await deleteMemory(selectedMemory._id);
                       setInspectorOpen(false);
                     }}
                   >

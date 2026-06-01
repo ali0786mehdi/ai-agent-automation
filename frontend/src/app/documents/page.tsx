@@ -7,6 +7,14 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyContent,
+} from "@/components/ui/empty";
 import Link from "next/link";
 import { useAssistantContext } from "@/context/assistant-context";
 import {
@@ -15,7 +23,8 @@ import {
   FileText,
   FileCode,
   File,
-  Search
+  Search,
+  SearchX
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiUrl } from "@/lib/api";
@@ -38,8 +47,6 @@ export default function DocumentsPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { addToast } = useToast();
 
-  /* ---------------- Fetch docs ---------------- */
-
   async function fetchDocuments() {
     try {
       const res = await fetch(apiUrl("/documents"), {
@@ -49,7 +56,6 @@ export default function DocumentsPage() {
       });
 
       const data = await res.json();
-
       if (data.ok) {
         setDocuments(data.documents || []);
       }
@@ -61,8 +67,6 @@ export default function DocumentsPage() {
   useEffect(() => {
     fetchDocuments();
   }, []);
-
-  /* ---------------- Assistant context ---------------- */
 
   useEffect(() => {
     setContext({
@@ -78,8 +82,6 @@ export default function DocumentsPage() {
 
     return () => clearContext();
   }, [documents]);
-
-  /* ---------------- Upload ---------------- */
 
   async function uploadFile(file: File) {
     try {
@@ -97,13 +99,11 @@ export default function DocumentsPage() {
       });
 
       const data = await res.json();
-
       if (data.ok) {
         addToast({
           type: "success",
           title: "Document uploaded",
         });
-
         fetchDocuments();
       }
     } catch {
@@ -116,8 +116,6 @@ export default function DocumentsPage() {
     }
   }
 
-  /* ---------------- Delete ---------------- */
-
   async function deleteDoc(id: string) {
     try {
       await fetch(apiUrl(`/documents/${id}`), {
@@ -128,7 +126,6 @@ export default function DocumentsPage() {
       });
 
       setDocuments((prev) => prev.filter((d) => d._id !== id));
-
       addToast({
         type: "success",
         title: "Document deleted",
@@ -141,8 +138,6 @@ export default function DocumentsPage() {
     }
   }
 
-  /* ---------------- Utils ---------------- */
-
   function getFileIcon(type: string) {
     if (type === "pdf") return <FileText className="size-5 text-red-500" />;
     if (type === "md") return <FileCode className="size-5 text-blue-500" />;
@@ -151,11 +146,8 @@ export default function DocumentsPage() {
 
   function formatSize(bytes?: number) {
     if (!bytes) return null;
-
     const kb = bytes / 1024;
-
     if (kb < 1024) return `${kb.toFixed(1)} KB`;
-
     return `${(kb / 1024).toFixed(1)} MB`;
   }
 
@@ -173,14 +165,11 @@ export default function DocumentsPage() {
           style={{ paddingLeft: "var(--sidebar-width, 256px)" }}
         >
           <div className="p-8 max-w-6xl mx-auto">
-
             {/* Header */}
             <div className="mb-8 flex flex-col gap-6">
-
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-3xl font-bold">Documents</h1>
-
                   <p className="text-sm text-muted-foreground mt-1">
                     Knowledge base used by AI workflows
                   </p>
@@ -219,85 +208,87 @@ export default function DocumentsPage() {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
-
             </div>
 
-            {/* Empty state */}
+            {/* Empty state conditional */}
             {filteredDocs.length === 0 && (
-              <Card className="p-10 flex flex-col items-center justify-center text-center gap-4">
-
-                <FileText className="size-8 text-muted-foreground" />
-
-                <div>
-                  <p className="font-medium">No documents found</p>
-
-                  <p className="text-sm text-muted-foreground">
-                    Upload your first document to start building AI workflows.
-                  </p>
-                </div>
-
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="gap-2"
-                >
-                  <Upload className="size-4" />
-                  Upload Document
-                </Button>
-
-              </Card>
+              <div className="py-4 w-full">
+                {documents.length > 0 ? (
+                  <Empty>
+                    <EmptyHeader>
+                      <EmptyMedia variant="icon">
+                        <SearchX />
+                      </EmptyMedia>
+                      <EmptyTitle>No results found</EmptyTitle>
+                      <EmptyDescription>
+                        We couldn't find any matches for "{search}". Check your spelling or try another keyword.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                    <EmptyContent>
+                      <Button variant="outline" size="sm" onClick={() => setSearch("")}>
+                        Clear search filter
+                      </Button>
+                    </EmptyContent>
+                  </Empty>
+                ) : (
+                  <Empty>
+                    <EmptyHeader>
+                      <EmptyMedia variant="icon">
+                        <FileText />
+                      </EmptyMedia>
+                      <EmptyTitle>No documents uploaded</EmptyTitle>
+                      <EmptyDescription>
+                        Upload text, PDFs, or markdown knowledge elements to enrich your automation environment vectors.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                    <EmptyContent>
+                      <Button onClick={() => fileInputRef.current?.click()} className="gap-2">
+                        <Upload className="size-4" />
+                        Upload Document
+                      </Button>
+                    </EmptyContent>
+                  </Empty>
+                )}
+              </div>
             )}
 
             {/* Document Grid */}
             {filteredDocs.length > 0 && (
               <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-
                 {filteredDocs.map((doc) => (
                   <Link key={doc._id} href={`/documents/${doc._id}`}>
-
                     <Card className="p-5 flex flex-col justify-between cursor-pointer transition-all hover:border-primary hover:shadow-lg hover:-translate-y-0.5">
-
                       {/* Top */}
                       <div className="flex items-start gap-3">
-
                         <div className="p-2 rounded-md bg-muted">
                           {getFileIcon(doc.fileType)}
                         </div>
 
                         <div className="flex-1">
-
                           <p className="font-semibold truncate">
                             {doc.title || "Untitled"}
                           </p>
 
                           <div className="flex flex-wrap items-center gap-2 mt-2">
-
                             <Badge variant="secondary" className="text-xs">
                               {doc.fileType}
                             </Badge>
 
-                            <Badge
-                              variant="outline"
-                              className="text-xs font-mono"
-                            >
+                            <Badge variant="outline" className="text-xs font-mono">
                               {doc.chunkCount} chunks
                             </Badge>
 
                             {doc.size && (
-                              <Badge
-                                variant="outline"
-                                className="text-xs"
-                              >
+                              <Badge variant="outline" className="text-xs">
                                 {formatSize(doc.size)}
                               </Badge>
                             )}
-
                           </div>
                         </div>
                       </div>
 
                       {/* Bottom */}
                       <div className="flex justify-between items-center mt-6">
-
                         <span className="text-xs text-muted-foreground">
                           {new Date(doc.createdAt).toLocaleDateString()}
                         </span>
@@ -314,14 +305,10 @@ export default function DocumentsPage() {
                         >
                           <Trash2 className="size-4" />
                         </Button>
-
                       </div>
-
                     </Card>
-
                   </Link>
                 ))}
-
               </div>
             )}
           </div>
