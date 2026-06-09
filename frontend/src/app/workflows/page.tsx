@@ -664,6 +664,7 @@ export default function WorkflowsPage() {
                         onCopy={copyId}
                         onEdit={handleEditWorkflow}
                         onDelete={handleDeleteClick}
+                        onUpdate={fetchWorkflows}
                       />
                     ))}
                   </div>
@@ -908,8 +909,17 @@ function DeleteWorkflowModal({
   }
 
   return (
-    <Dialog open={!!workflow} onOpenChange={close}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog
+      open={!!workflow}
+      onOpenChange={(open) => {
+        if (!open && !loading) close();
+      }}
+    >
+      <DialogContent
+        className="sm:max-w-md"
+        onEscapeKeyDown={(e) => loading && e.preventDefault()}
+        onPointerDownOutside={(e) => loading && e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Delete Workflow</DialogTitle>
           <DialogDescription className="text-foreground mt-4">
