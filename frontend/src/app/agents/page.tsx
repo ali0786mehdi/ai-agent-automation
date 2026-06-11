@@ -68,21 +68,25 @@ export default function AgentsPage() {
   }
 
   async function fetchAgents() {
-    try {
-      const res = await fetch(apiUrl("/agents"), {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("token"),
-        },
-      });
-
-      const data = await res.json();
-      if (data.ok) setAgents(data.agents as Agent[]);
-    } catch (err) {
-      console.error("Error fetching agents:", err);
-    } finally {
-      setLoading(false);
+  try {
+    console.log("Fetching agents...");
+    setLoading(true);
+    const res = await fetch(apiUrl("/agents"), {
+      headers: {
+        Authorization: "Bearer " + localStorage.getItem("token"),
+      },
+    });
+   
+    const data = await res.json();
+    if (data.ok) {
+      setAgents(data.agents as Agent[]);
     }
-  }
+ } catch (err) {
+  console.error("Error fetching agents:", err);
+} finally {
+  setLoading(false);
+}
+}
 
   useEffect(() => {
     fetchAgents();

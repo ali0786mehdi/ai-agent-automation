@@ -6,6 +6,8 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAssistantContext } from "@/context/assistant-context";
 import { Card } from "@/components/ui/card";
 import {
   Dialog,
@@ -129,7 +131,7 @@ const WorkflowCard = memo(
     isCopied: boolean;
     onCopy: (id: string) => void;
     onEdit: (workflow: Workflow) => void;
-    onDelete: (id: string) => void;
+    onDelete: (workflow: Workflow) => void;
     onUpdate: () => void;
   }) => {
     const [isEditing, setIsEditing] = useState(false);
@@ -271,7 +273,7 @@ const WorkflowCard = memo(
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    onDelete(workflow._id);
+                    onDelete(workflow);
                   }}
                 >
                   Delete
@@ -291,7 +293,7 @@ const WorkflowCard = memo(
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                onDelete(workflow._id);
+                onDelete(workflow);
               }}
             >
               Delete
@@ -352,6 +354,7 @@ export default function WorkflowsPage() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState<false | "blank" | "template">(false);
   const [editingWorkflow, setEditingWorkflow] = useState<Workflow | null>(null);
+  const [workflowToDelete, setWorkflowToDelete] = useState<Workflow | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [agentMap, setAgentMap] = useState<Record<string, string>>({});
   const { addToast } = useToast();
@@ -403,26 +406,9 @@ export default function WorkflowsPage() {
     }
   }, []);
 
-  const handleDeleteWorkflow = useCallback(async (id: string) => {
-    const confirmed = confirm("Delete this workflow? This cannot be undone.");
-    if (!confirmed) return;
-
-    try {
-      const res = await fetch(apiUrl(`/workflows/${id}`), {
-        method: "DELETE",
-        headers: {
-          Authorization: "Bearer " + (localStorage.getItem("token") ?? ""),
-        },
-      });
-
-      if (!res.ok) throw new Error("Failed");
-
-      addToast({ type: "success", title: "Workflow deleted" });
-      fetchWorkflows();
-    } catch (err) {
-      console.error("Delete failed:", err);
-    }
-  }, [addToast, fetchWorkflows]);
+  const handleDeleteClick = useCallback((workflow: Workflow) => {
+    setWorkflowToDelete(workflow);
+  }, []);
 
   useEffect(() => {
     fetchWorkflows();
@@ -559,32 +545,74 @@ export default function WorkflowsPage() {
             </div>
 
             {loading ? (
-              <p className="opacity-70">Loading workflows...</p>
-            ) : workflows.length === 0 ? (
-              // Hard Empty State (No workflows exist in database at all)
-              <div className="py-12 max-w-2xl mx-auto">
-                <Empty>
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <GitFork />
-                    </EmptyMedia>
-                    <EmptyTitle>No workflows yet</EmptyTitle>
-                    <EmptyDescription>
-                      Create your first automated workflow or build from a
-                      template configuration to begin setting up agent jobs.
-                    </EmptyDescription>
-                  </EmptyHeader>
-                  <EmptyContent>
-                    <div className="flex gap-4">
-                      <Button onClick={() => setOpen("blank")}>
-                        Create Blank Workflow
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => setOpen("template")}
-                      >
-                        Choose Template
-                      </Button>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Card key={i} className="p-6">
+                    <div className="space-y-4">
+                      <Skeleton className="h-6 w-3/4" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-5/6" />
+                      <Skeleton className="h-4 w-1/2" />
+                      <Skeleton className="h-8 w-24" />
+                    </div>
+                 </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {workflows.map((workflow) => (
+                  <Card key={workflow._id} className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <Link
+                          href={`/workflows/${workflow._id}`}
+                          className="text-lg font-semibold hover:text-primary"
+                        >
+                          {workflow.name}
+                        </Link>
+
+                        {workflow.description && (
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            {workflow.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+
+                        <DropdownMenuContent align="end">
+                          <Link href={`/workflows/${workflow._id}/builder`}>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setEditingWorkflow(workflow);
+                              }}
+                            >
+                              Edit Workflow Details
+                            </DropdownMenuItem>
+                          </Link>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDeleteWorkflow(workflow._id);
+                            }}
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </EmptyContent>
                 </Empty>
@@ -665,16 +693,16 @@ export default function WorkflowsPage() {
                 ) : (
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {filteredWorkflows.map((workflow) => (
-                      <WorkflowCard
-                        key={workflow._id}
-                        workflow={workflow}
-                        agentName={getAgentName(workflow.agentId)}
-                        isCopied={copiedId === workflow._id}
-                        onCopy={copyId}
-                        onEdit={handleEditWorkflow}
-                        onDelete={handleDeleteWorkflow}
-                        onUpdate={fetchWorkflows}
-                      />
+                     <WorkflowCard
+  key={workflow._id}
+  workflow={workflow}
+  agentName={getAgentName(workflow.agentId)}
+  isCopied={copiedId === workflow._id}
+  onCopy={copyId}
+  onEdit={handleEditWorkflow}
+  onDelete={handleDeleteClick}
+  onUpdate={fetchWorkflows}
+/>
                     ))}
                   </div>
                 )}
@@ -691,6 +719,11 @@ export default function WorkflowsPage() {
         <EditWorkflowModal
           workflow={editingWorkflow}
           close={() => setEditingWorkflow(null)}
+          refresh={fetchWorkflows}
+        />
+        <DeleteWorkflowModal
+          workflow={workflowToDelete}
+          close={() => setWorkflowToDelete(null)}
           refresh={fetchWorkflows}
         />
       </div>
@@ -869,6 +902,73 @@ function EditWorkflowModal({
           </Button>
           <Button onClick={save} disabled={loading}>
             Save Changes
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeleteWorkflowModal({
+  workflow,
+  close,
+  refresh,
+}: {
+  workflow: Workflow | null;
+  close: () => void;
+  refresh: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const { addToast } = useToast();
+
+  async function confirmDelete() {
+    if (!workflow) return;
+    setLoading(true);
+    try {
+      const res = await fetch(apiUrl(`/workflows/${workflow._id}`), {
+        method: "DELETE",
+        headers: {
+          Authorization: "Bearer " + (localStorage.getItem("token") ?? ""),
+        },
+      });
+
+      if (!res.ok) throw new Error("Delete failed");
+
+      addToast({ type: "success", title: "Workflow deleted" });
+      refresh();
+      close();
+    } catch (err) {
+      console.error("Delete failed:", err);
+      addToast({ type: "error", title: "Failed to delete workflow" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Dialog
+      open={!!workflow}
+      onOpenChange={(open) => {
+        if (!open && !loading) close();
+      }}
+    >
+      <DialogContent
+        className="sm:max-w-md"
+        onEscapeKeyDown={(e) => loading && e.preventDefault()}
+        onPointerDownOutside={(e) => loading && e.preventDefault()}
+      >
+        <DialogHeader>
+          <DialogTitle>Delete Workflow</DialogTitle>
+          <DialogDescription className="text-foreground mt-4">
+            Are you sure you want to delete workflow <strong>"{workflow?.name}"</strong>? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={close} disabled={loading}>
+            Cancel
+          </Button>
+          <Button variant="destructive" onClick={confirmDelete} disabled={loading}>
+            {loading ? "Deleting..." : "Delete"}
           </Button>
         </DialogFooter>
       </DialogContent>

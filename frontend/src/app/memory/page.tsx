@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { apiUrl } from "@/lib/api";
-
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -73,7 +72,7 @@ export default function MemoryPage() {
         Authorization: "Bearer " + localStorage.getItem("token"),
       },
     });
-
+   
     const data = await res.json();
     if (data.ok) setMemories(data.memories);
     setLoading(false);
@@ -210,7 +209,19 @@ export default function MemoryPage() {
                       </div>
                     )}
 
-                    {memories.map((m) => {
+                    {loading ? (
+                      Array.from({ length: 6 }).map((_, i) => (
+                        <Card key={i} className="p-4">
+                          <div className="space-y-4">
+                            <Skeleton className="h-4 w-20" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-5/6" />
+                            <Skeleton className="h-4 w-2/3" />
+                          </div>
+                        </Card>
+                     ))
+                   ) : (
+                      memories.map((m) => {
                       const parsed = parseMemory(m.content);
 
                       return (
@@ -280,7 +291,7 @@ export default function MemoryPage() {
                           </div>
                         </Card>
                       );
-                    })}
+                    }))}
                   </div>
                 </ScrollArea>
               </CardContent>

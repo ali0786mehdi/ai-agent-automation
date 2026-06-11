@@ -6,6 +6,9 @@ import { Card } from "@/components/ui/card";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Download, Pause, Play, RefreshCw } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@/components/ui/empty";
@@ -50,6 +53,15 @@ function getLogBadge(log: Log) {
   if (msg.includes("executing")) return "EXEC";
   if (msg.includes("claimed")) return "CLAIMED";
   return log.level.toUpperCase();
+}
+function LogRowSkeleton() {
+  return (
+    <div className="flex items-center gap-3 py-2">
+      <Skeleton className="h-5 w-20" />
+      <Skeleton className="h-6 w-16" />
+      <Skeleton className="h-4 flex-1" />
+    </div>
+  );
 }
 
 export default function LogsPage() {
@@ -219,9 +231,19 @@ export default function LogsPage() {
                 <span className="font-mono text-xs text-muted-foreground">logs.txt</span>
               </div>
 
-              <div className="overflow-y-auto bg-black p-6 flex flex-col" style={{ height: "calc(100vh - 380px)" }}>
-                <div className="space-y-1 font-mono text-sm flex-1 flex flex-col justify-center">
-                  {loading && <p className="text-zinc-500 text-center">Loading logs…</p>}
+              <div
+                className="overflow-y-auto bg-black p-6"
+                style={{ height: "calc(100vh - 300px)" }}
+              >
+                <div className="space-y-1 font-mono text-sm">
+                  {loading && (
+                    <>
+                    {Array.from({ length: 12 }).map((_, i) => (
+                      <LogRowSkeleton key={i} />
+                      ))}
+                      </>
+                    )}
+
                   {!loading && logs.length === 0 && (
                     <Empty className="border-none bg-transparent max-w-md mx-auto py-12">
                       <EmptyHeader>
