@@ -4,25 +4,34 @@ This collection covers all major API groups in the platform.
 
 ## How to Import
 
-1. Download `ai-agent-automation.postman_collection.json`
+1. Download both files:
+   - `ai-agent-automation.postman_collection.json`
+   - `ai-agent-automation.postman_environment.json`
 2. Open Postman
-3. Click **Import** → drag and drop the file
-4. Collection appears in your sidebar
+3. Click **Import** → drag and drop both files
+4. Select the **"AI Agent Automation - Local"** environment from the top-right dropdown
 
 ## Setup
 
-After importing, set the collection variables:
+The environment file pre-fills these variables — just update values as needed:
 
-| Variable  | Value                   |
-|-----------|-------------------------|
-| `baseUrl` | `http://localhost:5000`  |
-| `token`   | _(auto-set after login)_ |
+| Variable        | Description                          | Default                  |
+|------------------|---------------------------------------|---------------------------|
+| `baseUrl`        | Backend server URL                    | `http://localhost:5000`  |
+| `token`          | Auto-set after running Login          | _(empty)_                 |
+| `userEmail`      | Test account email                    | `test@example.com`        |
+| `userPassword`   | Test account password                 | `password123`             |
+| `agentId`        | Agent ID for agent-specific requests  | _(set after creating one)_|
+| `workflowId`     | Workflow ID for workflow requests     | _(set after creating one)_|
+| `documentId`     | Document ID for RAG requests          | _(set after uploading one)_|
+| `webhookSource`  | Webhook source identifier (e.g. github, slack) | `github`         |
+| `webhookSecret`  | Secret for public webhook auth        | _(empty)_                 |
 
 ## Quick Start
 
 1. Run **Auth → Login** first — token is automatically saved to `{{token}}`
-2. All other requests use `{{token}}` automatically
-3. Replace `AGENT_ID_HERE`, `WORKFLOW_ID_HERE` etc. with real IDs from list responses
+2. Run **Agents → Create Agent** — copy the returned `_id` into the `agentId` environment variable
+3. All other requests use the environment variables automatically
 
 ## API Groups Covered
 
@@ -36,7 +45,7 @@ After importing, set the collection variables:
 | Tasks          | List, Get                                      |
 | Schedules      | List, Create, Delete                           |
 | Webhooks       | List, Create, Trigger (Public)                 |
-| Documents/RAG  | List, Upload, Get, Delete                      |
+| Documents/RAG  | List, Upload, Chat, Get, Delete                |
 | Memory         | List, List Agents, Delete Entry, Clear Agent   |
 | Settings       | Get, Update                                    |
 | Logs           | List                                           |
@@ -44,9 +53,18 @@ After importing, set the collection variables:
 | System         | Get Providers                                  |
 | Templates      | List                                           |
 
+## Notes on Webhooks
+
+The public webhook endpoint is `POST /webhook/:source` (not `/webhook/:token`).
+Authentication is via either:
+- Query param: `?secret=YOUR_SECRET`
+- Header: `x-webhook-secret: YOUR_SECRET`
+
+The collection request includes both for reference — only one is required.
+
 ## Local Development Setup
 
-Make sure your `.env` has:
+Make sure your backend `.env` has:
 
 ```env
 MONGO_URI=your_mongodb_uri
